@@ -1,0 +1,18 @@
+{
+  "auth": {
+    "device_id": "YOUR_DEVICE_ID",
+    "username": "YOUR_EMAIL",
+    "password": "YOUR_PASSWORD"
+  },
+  "areas_file": "all_areas.txt",
+  "batch_size": 30,
+  "auto": true,
+  "date_settings": {
+    "start_date": "01.12.2025",
+    "end_date": "02.12.2025",
+    "everyday": true
+  },
+  "output_raw_file": "metrics_raw.json",
+  "output_merged_file": "metrics_merged.json",
+  "output_final_file": "01.12.2025.json"
+}
