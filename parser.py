@@ -30,6 +30,10 @@ def load_areas() -> List[str]:
     print(f"[OK] Загружено {len(areas)} районов")
     return areas
 
+def get_default_area() -> str:
+    """Получает дефолтный район из конфига или возвращает Business Bay"""
+    return config.get("default_area", "Business Bay")
+
 def create_handle_response(area_name: str, captured_requests: List[Dict[str, Any]], page: Any) -> Any:
     """Фабрика для создания обработчика ответов для конкретного района"""
     def handle_response(response: Any) -> None:
@@ -63,12 +67,12 @@ def main() -> None:
 
         page = context.new_page()
 
-        page.goto("https://insight.reidin.com/", wait_until="load")
+        page.goto("https://insight.reidin.com/", wait_until="load", timeout=60000)
 
         page.evaluate(f"localStorage.setItem('deviceId', '{DEVICE_ID}');")
         print("[OK] device_id установлен")
 
-        page.goto("https://insight.reidin.com/auth/login", wait_until="load")
+        page.goto("https://insight.reidin.com/auth/login", wait_until="load", timeout=60000)
         print("[OK] Страница логина открыта")
 
         page.fill('#input-emaillogin-desktop', USERNAME)
@@ -76,22 +80,32 @@ def main() -> None:
 
         page.locator('xpath=//input[@id="input-emaillogin-desktop"]/ancestor::form[1]//button[@type="submit"]').click()
 
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("networkidle", timeout=60000)
 
         context.storage_state(path="state.json")
         print("[OK] Авторизация успешна. state.json сохранён.")
 
-        page.goto("https://insight.reidin.com/home/dashboard/754", wait_until="load")
+        page.goto("https://insight.reidin.com/home/dashboard/754", wait_until="load", timeout=60000)
         print("[OK] Dashboard открыт")
 
+        # === ПЕРЕХВАТ ДАННЫХ ДЕФОЛТНОГО РАЙОНА (он уже загружен) ===
+        default_area = get_default_area()
+        print(f"[INFO] Перехватываю данные дефолтного района: {default_area}")
+        
+        default_base_requests = []
+        default_handler = create_handle_response(default_area, default_base_requests, page)
+        page.on("response", default_handler)
+        
         try:
             page.wait_for_load_state("networkidle", timeout=10000)
         except:
             pass
-        print(f"[OK] Dashboard загружен (начальные запросы игнорируются)")
+        print(f"[OK] Dashboard загружен. Перехвачено {len(default_base_requests)} запросов для {default_area}")
 
-        print("[INFO] Ожидание полной загрузки страницы (10 сек)...")
-        page.wait_for_timeout(10000)
+        page.remove_listener("response", default_handler)
+        
+        print("[INFO] Ожидание полной загрузки страницы (5 сек)...")
+        page.wait_for_timeout(5000)
 
         start_date_str = os.environ.get("PARSER_START_DATE")
         end_date_str = os.environ.get("PARSER_END_DATE")
@@ -313,8 +327,38 @@ def main() -> None:
                     pass
             except Exception as e:
                 print(f"  [ERROR] Ошибка при установке диапазона дат: {e}")
-        print(f"\n[INFO] Начинаю обработку {len(areas)} районов...")
-        for area in areas:
+        
+        # === СОХРАНЕНИЕ ДАННЫХ ДЕФОЛТНОГО РАЙОНА ===
+        if dates_to_process:
+            first_date = dates_to_process[0]
+            if isinstance(first_date, tuple):
+                date_key = f"{first_date[0]}-{first_date[1]}"
+            else:
+                date_key = first_date
+            
+            if date_key not in all_dates_result:
+                all_dates_result[date_key] = {}
+            all_dates_result[date_key][default_area] = default_base_requests.copy()
+            print(f"[OK] Данные дефолтного района {default_area} сохранены")
+        
+        # === ОБРАБОТКА ДАТ ДЛЯ ДЕФОЛТНОГО РАЙОНА ===
+        print(f"\n[INFO] Обработка различных дат для {default_area}...")
+        for day_index, date_str in enumerate(dates_to_process):
+            is_first_day = (day_index == 0)
+            process_area_day(default_area, date_str, is_first_day, default_base_requests)
+            with open(output_file, "w", encoding="utf-8") as f:
+                json.dump(all_dates_result, f, ensure_ascii=False, indent=2)
+        
+        set_date_to_today()
+        
+        # === ОСНОВНОЙ ЦИКЛ: обработка остальных районов ===
+        print(f"\n[INFO] Начинаю обработку остальных районов...")
+        areas_to_process = [a for a in areas if a != default_area]
+        
+        if not areas_to_process:
+            print(f"[INFO] Все районы обработаны (только дефолтный район в списке)")
+        
+        for area in areas_to_process:
             print(f"\n{'='*60}")
             print(f"[PROCESSING] {area}")
             print(f"{'='*60}")

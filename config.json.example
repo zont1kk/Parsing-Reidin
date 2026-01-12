@@ -6,6 +6,7 @@
   },
   "areas_file": "all_areas.txt",
   "batch_size": 30,
+  "default_area": "Business Bay",
   "auto": true,
   "date_settings": {
     "start_date": "01.12.2025",
