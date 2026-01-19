@@ -146,6 +146,7 @@ python runner.py
 ```
 
 Процесс:
+
 1. Парсер загружает конфиг из config.json
 2. Валидирует файлы районов
 3. Запускает парсер для каждого батча последовательно
@@ -437,7 +438,6 @@ Parsing Reidin/
 Каждый парсер запускается отдельно и работает полностью автономно:
 
 ```bash
-python parser_price_trends.py
 python parser_property_data.py
 python parser_yields.py
 ```
@@ -445,12 +445,14 @@ python parser_yields.py
 **Рекомендуемый режим**: Настройте cron/Task Scheduler для автоматического запуска каждого парсера раз в месяц.
 
 **Что происходит при запуске парсера:**
+
 1. Скачивание всех XLSX таблиц для всех комбинаций городов и типов объектов
 2. Автоматическая конвертация XLSX → JSON
 3. Автоматическое объединение всех JSON в итоговые файлы
 4. Автоматическая очистка промежуточных файлов (XLSX после конвертации, JSON после объединения)
 
 **Пример cron для ежемесячного запуска (1-го числа в 3:00):**
+
 ```cron
 0 3 1 * * cd /path/to/Parsing-Reidin && .venv/bin/python parser_price_trends.py
 0 4 1 * * cd /path/to/Parsing-Reidin && .venv/bin/python parser_property_data.py

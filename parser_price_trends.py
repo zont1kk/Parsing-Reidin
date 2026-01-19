@@ -89,7 +89,7 @@ def main():
         found = False
 
         for attempt in range(max_wait):
-            page.wait_for_timeout(1000)
+            page.wait_for_timeout(2000)
 
             for frame in page.frames:
                 dropdowns = frame.locator('div.slicer-dropdown-menu')
@@ -148,7 +148,7 @@ def main():
         print("[OK] Клик выполнен")
 
         print("[INFO] Ожидание 1 секунды...")
-        page.wait_for_timeout(1000)
+        page.wait_for_timeout(2000)
 
         print("\n[>>] Ищу кнопку 'Выбрать все'...")
         select_all = page.locator('div[title="Выбрать все"], div[title="Select all"]')
@@ -169,12 +169,12 @@ def main():
         select_all.first.click()
         print("[OK] Клик выполнен")
 
-        print("[INFO] Ожидание 1 секунды...")
-        page.wait_for_timeout(1000)
+        print("[INFO] Ожидание 2 секунды...")
+        page.wait_for_timeout(2000)
 
         print("\n[>>] Закрываю Location dropdown...")
         page.keyboard.press("Escape")
-        page.wait_for_timeout(1000)
+        page.wait_for_timeout(2000)
         print("[OK] Dropdown закрыт")
 
         print("\n[>>] Устанавливаю дату начала: 01.01.2003...")
@@ -189,16 +189,16 @@ def main():
 
         if date_start_input.count() > 0:
             date_start_input.first.clear()
-            page.wait_for_timeout(500)
+            page.wait_for_timeout(2000)
             date_start_input.first.fill("01.01.2003")
-            page.wait_for_timeout(1000)
+            page.wait_for_timeout(2000)
             print("[OK] Дата начала установлена: 01.01.2003")
 
             try:
                 page.wait_for_load_state("networkidle", timeout=2000)
             except:
                 pass
-            page.wait_for_timeout(1000)
+            page.wait_for_timeout(2000)
         else:
             print("[WARNING] Поле 'Дата начала' не найдено")
 
@@ -222,7 +222,7 @@ def main():
 
         print("[>>] Кликаю по City dropdown...")
         city_dropdown.first.click()
-        page.wait_for_timeout(2000)
+        page.wait_for_timeout(3000)
         print("[OK] City dropdown открыт")
 
         dropdown_popup = None
@@ -258,7 +258,7 @@ def main():
         print(f"[INFO] Города: {', '.join(cities)}")
 
         page.keyboard.press("Escape")
-        page.wait_for_timeout(1000)
+        page.wait_for_timeout(2000)
 
         downloaded_files = []
 
@@ -275,40 +275,53 @@ def main():
                         break
 
             city_dropdown.first.click()
-            page.wait_for_timeout(1000)
+            page.wait_for_timeout(3000)
 
+            popup_id = city_dropdown.first.get_attribute('aria-controls')
+            
             dropdown_popup = None
-            all_popups = page.locator('div.slicer-dropdown-popup.focused')
-            if all_popups.count() == 0:
-                for frame in page.frames:
-                    all_popups = frame.locator('div.slicer-dropdown-popup.focused')
-                    if all_popups.count() > 0:
-                        break
-
-            for i in range(all_popups.count()):
-                popup = all_popups.nth(i)
-                display_style = popup.evaluate('el => window.getComputedStyle(el).display')
-                if display_style == 'block':
-                    dropdown_popup = popup
-                    break
+            if popup_id:
+                dropdown_popup = page.locator(f'#{popup_id}')
+                if dropdown_popup.count() == 0:
+                    for frame in page.frames:
+                        dropdown_popup = frame.locator(f'#{popup_id}')
+                        if dropdown_popup.count() > 0:
+                            dropdown_popup = dropdown_popup.first
+                            break
+                        else:
+                            dropdown_popup = None
+                else:
+                    dropdown_popup = dropdown_popup.first
+            
+            if not dropdown_popup:
+                all_popups = page.locator('div.slicer-dropdown-popup.focused')
+                if all_popups.count() == 0:
+                    for frame in page.frames:
+                        all_popups = frame.locator('div.slicer-dropdown-popup.focused')
+                        if all_popups.count() > 0:
+                            break
+                
+                if all_popups.count() > 0:
+                    dropdown_popup = all_popups.first
 
             if dropdown_popup:
 
                 select_all_city = dropdown_popup.locator('div.slicerItemContainer[title="Выбрать все"], div.slicerItemContainer[title="Select all"]')
                 if select_all_city.count() > 0:
-
                     print("[>>] Снимаю все выделения городов...")
-                    select_all_city.first.click()
-                    page.wait_for_timeout(500)
-                    select_all_city.first.click()
-                    page.wait_for_timeout(500)
+                    try:
+                        select_all_city.first.click(timeout=10000)
+                        page.wait_for_timeout(2000)
+                        select_all_city.first.click(timeout=10000)
+                        page.wait_for_timeout(2000)
+                    except Exception as e:
+                        print(f"[WARN] Не удалось снять выделения: {e}")
 
-            scroll_region = dropdown_popup.locator('div.scrollRegion') if dropdown_popup else page.locator('div.scrollRegion')
-            if scroll_region.count() == 0:
-                for frame in page.frames:
-                    scroll_region = frame.locator('div.scrollRegion')
-                    if scroll_region.count() > 0:
-                        break
+            if not dropdown_popup:
+                print("[ERROR] City dropdown popup не найден")
+                continue
+            
+            scroll_region = dropdown_popup.locator('div.scrollRegion')
 
             all_rows = scroll_region.locator('div.row')
             city_clicked = False
@@ -320,7 +333,7 @@ def main():
                     if title == city:
                         print(f"[>>] Кликаю по городу: {city}")
                         slicer_item.first.click()
-                        page.wait_for_timeout(1000)
+                        page.wait_for_timeout(2000)
                         city_clicked = True
                         break
 
@@ -329,13 +342,13 @@ def main():
                 continue
 
             page.keyboard.press("Escape")
-            page.wait_for_timeout(1000)
+            page.wait_for_timeout(2000)
 
             try:
                 page.wait_for_load_state("networkidle", timeout=2000)
             except:
                 pass
-            page.wait_for_timeout(1000)
+            page.wait_for_timeout(2000)
 
             property_types = ["Apartment", "Villa"]
 
@@ -355,7 +368,7 @@ def main():
                     continue
 
                 subtype_dropdown.first.click()
-                page.wait_for_timeout(1000)
+                page.wait_for_timeout(2000)
 
                 dropdown_popup = None
                 all_popups = page.locator('div.slicer-dropdown-popup.focused')
@@ -372,12 +385,13 @@ def main():
                         dropdown_popup = popup
                         break
 
-                scroll_region = dropdown_popup.locator('div.scrollRegion') if dropdown_popup else page.locator('div.scrollRegion')
-                if scroll_region.count() == 0:
-                    for frame in page.frames:
-                        scroll_region = frame.locator('div.scrollRegion')
-                        if scroll_region.count() > 0:
-                            break
+                if not dropdown_popup:
+                    print("[ERROR] Property Subtype dropdown popup не найден")
+                    page.keyboard.press("Escape")
+                    page.wait_for_timeout(2000)
+                    continue
+                
+                scroll_region = dropdown_popup.locator('div.scrollRegion')
 
                 all_rows = scroll_region.locator('div.row')
                 type_clicked = False
@@ -389,24 +403,24 @@ def main():
                         if title == prop_type:
                             print(f"[>>] Кликаю по типу: {prop_type}")
                             slicer_item.first.click()
-                            page.wait_for_timeout(1000)
+                            page.wait_for_timeout(2000)
                             type_clicked = True
                             break
 
                 if not type_clicked:
                     print(f"[ERROR] Не удалось кликнуть по типу: {prop_type}")
                     page.keyboard.press("Escape")
-                    page.wait_for_timeout(1000)
+                    page.wait_for_timeout(2000)
                     continue
 
                 page.keyboard.press("Escape")
-                page.wait_for_timeout(1000)
+                page.wait_for_timeout(2000)
 
                 try:
                     page.wait_for_load_state("networkidle", timeout=2000)
                 except:
                     pass
-                page.wait_for_timeout(1000)
+                page.wait_for_timeout(2000)
 
                 print(f"\n[EXPORT] Sales Price Trend для {city} - {prop_type}")
 
@@ -495,7 +509,7 @@ def download_table(page, table_name, city, prop_type, table_type):
     print("[OK] Клик выполнен")
 
     print("[INFO] Ожидание появления кнопок (1 сек)...")
-    page.wait_for_timeout(1000)
+    page.wait_for_timeout(2000)
 
     print("[>>] Ищу кнопку 'Дополнительные параметры'...")
     more_options = page.locator('button[aria-label="Дополнительные параметры"], button[aria-label="More options"]')
@@ -516,7 +530,7 @@ def download_table(page, table_name, city, prop_type, table_type):
     more_options.first.click()
     print("[OK] Клик выполнен")
 
-    page.wait_for_timeout(1000)
+    page.wait_for_timeout(2000)
 
     print("[>>] Ищу кнопку 'Экспортировать данные'...")
     export_data = page.locator('button[title="Экспортировать данные"], button[title="Export data"]')
@@ -537,7 +551,7 @@ def download_table(page, table_name, city, prop_type, table_type):
     export_data.first.click()
     print("[OK] Клик выполнен")
 
-    page.wait_for_timeout(1000)
+    page.wait_for_timeout(2000)
 
     print("[>>] Ищу кнопку 'Экспортировать'...")
     export_button = page.locator('button[aria-label="Экспортировать"], button[aria-label="Export"]')

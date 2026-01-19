@@ -89,7 +89,7 @@ def main():
         found = False
 
         for attempt in range(max_wait):
-            page.wait_for_timeout(1000)
+            page.wait_for_timeout(2000)
 
             for frame in page.frames:
                 dropdowns = frame.locator('div.slicer-dropdown-menu')
@@ -129,7 +129,7 @@ def main():
         property_dropdown.first.click()
         print("[OK] Клик выполнен")
 
-        page.wait_for_timeout(1000)
+        page.wait_for_timeout(2000)
 
         print("\n[>>] Ищу кнопку 'Выбрать все'...")
         select_all = page.locator('div[title="Выбрать все"], div[title="Select all"]')
@@ -150,11 +150,11 @@ def main():
         select_all.first.click()
         print("[OK] Клик выполнен")
 
-        page.wait_for_timeout(1000)
+        page.wait_for_timeout(2000)
 
         print("\n[>>] Закрываю Property dropdown...")
         page.keyboard.press("Escape")
-        page.wait_for_timeout(1000)
+        page.wait_for_timeout(2000)
         print("[OK] Dropdown закрыт")
 
         print("\n[>>] Устанавливаю дату начала: 01.01.2003...")
@@ -169,16 +169,16 @@ def main():
 
         if date_start_input.count() > 0:
             date_start_input.first.clear()
-            page.wait_for_timeout(500)
+            page.wait_for_timeout(2000)
             date_start_input.first.fill("01.01.2003")
-            page.wait_for_timeout(1000)
+            page.wait_for_timeout(2000)
             print("[OK] Дата начала установлена: 01.01.2003")
 
             try:
                 page.wait_for_load_state("networkidle", timeout=2000)
             except:
                 pass
-            page.wait_for_timeout(1000)
+            page.wait_for_timeout(2000)
         else:
             print("[WARNING] Поле 'Дата начала' не найдено")
 
@@ -237,7 +237,7 @@ def main():
         print(f"[INFO] Города: {', '.join(cities)}")
 
         page.keyboard.press("Escape")
-        page.wait_for_timeout(1000)
+        page.wait_for_timeout(2000)
 
         downloaded_files = []
 
@@ -254,7 +254,7 @@ def main():
                         break
 
             city_dropdown.first.click()
-            page.wait_for_timeout(1000)
+            page.wait_for_timeout(2000)
 
             dropdown_popup = None
             all_popups = page.locator('div.slicer-dropdown-popup.focused')
@@ -295,17 +295,17 @@ def main():
             if not city_clicked:
                 print(f"[ERROR] Не удалось кликнуть по городу: {city}")
                 page.keyboard.press("Escape")
-                page.wait_for_timeout(1000)
+                page.wait_for_timeout(2000)
                 continue
 
             page.keyboard.press("Escape")
-            page.wait_for_timeout(1000)
+            page.wait_for_timeout(2000)
 
             try:
                 page.wait_for_load_state("networkidle", timeout=2000)
             except:
                 pass
-            page.wait_for_timeout(1000)
+            page.wait_for_timeout(2000)
 
             print("\n[>>] Получаю список типов для города: " + city)
 
@@ -355,7 +355,7 @@ def main():
             print(f"[INFO] Типы: {', '.join(property_types)}")
 
             page.keyboard.press("Escape")
-            page.wait_for_timeout(1000)
+            page.wait_for_timeout(2000)
 
             for prop_type in property_types:
                 print(f"\n[PROPERTY TYPE] {prop_type}")
@@ -373,7 +373,7 @@ def main():
                     continue
 
                 subtype_dropdown.first.click()
-                page.wait_for_timeout(1000)
+                page.wait_for_timeout(2000)
 
                 dropdown_popup = None
                 all_popups = page.locator('div.slicer-dropdown-popup.focused')
@@ -407,24 +407,24 @@ def main():
                         if title == prop_type:
                             print(f"[>>] Кликаю по типу: {prop_type}")
                             slicer_item.first.click()
-                            page.wait_for_timeout(1000)
+                            page.wait_for_timeout(2000)
                             type_clicked = True
                             break
 
                 if not type_clicked:
                     print(f"[ERROR] Не удалось кликнуть по типу: {prop_type}")
                     page.keyboard.press("Escape")
-                    page.wait_for_timeout(1000)
+                    page.wait_for_timeout(2000)
                     continue
 
                 page.keyboard.press("Escape")
-                page.wait_for_timeout(1000)
+                page.wait_for_timeout(2000)
 
                 try:
                     page.wait_for_load_state("networkidle", timeout=2000)
                 except:
                     pass
-                page.wait_for_timeout(1000)
+                page.wait_for_timeout(2000)
 
                 print(f"\n[EXPORT] Yields для {city} - {prop_type}")
 
@@ -444,7 +444,7 @@ def main():
 
                 if subtype_dropdown.count() > 0:
                     subtype_dropdown.first.click()
-                    page.wait_for_timeout(1000)
+                    page.wait_for_timeout(2000)
 
                     dropdown_popup = None
                     all_popups = page.locator('div.slicer-dropdown-popup.focused')
@@ -476,12 +476,12 @@ def main():
                             title = slicer_item.first.get_attribute('title')
                             if title == "Apartment":
                                 slicer_item.first.click()
-                                page.wait_for_timeout(1000)
+                                page.wait_for_timeout(2000)
                                 print(f"[OK] Возврат к Apartment выполнен")
                                 break
 
                     page.keyboard.press("Escape")
-                    page.wait_for_timeout(1000)
+                    page.wait_for_timeout(2000)
 
         context.close()
 
@@ -558,7 +558,7 @@ def download_yields_table(page, city, prop_type):
     print("[OK] Клик выполнен")
 
     print("[INFO] Ожидание появления кнопок (1 сек)...")
-    page.wait_for_timeout(1000)
+    page.wait_for_timeout(2000)
 
     print("[>>] Ищу кнопку 'Дополнительные параметры'...")
     more_options = page.locator('button[aria-label="Дополнительные параметры"], button[aria-label="More options"]')
@@ -580,7 +580,7 @@ def download_yields_table(page, city, prop_type):
     more_options.first.evaluate("element => element.click()")
     print("[OK] Клик выполнен")
 
-    page.wait_for_timeout(1000)
+    page.wait_for_timeout(2000)
 
     print("[>>] Ищу кнопку 'Экспортировать данные'...")
     export_data = page.locator('button[title="Экспортировать данные"], button[title="Export data"]')
@@ -601,7 +601,7 @@ def download_yields_table(page, city, prop_type):
     export_data.first.click()
     print("[OK] Клик выполнен")
 
-    page.wait_for_timeout(1000)
+    page.wait_for_timeout(2000)
 
     print("[>>] Ищу кнопку 'Экспортировать'...")
     export_button = page.locator('button[aria-label="Экспортировать"], button[aria-label="Export"]')
