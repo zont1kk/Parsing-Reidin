@@ -18,6 +18,8 @@ config.json
 *.json
 !config.json.example
 
+.browser_data
+
 *.log
 .DS_Store
 Thumbs.db
