@@ -20,7 +20,25 @@ PASSWORD = auth_config["password"]
 
 DASHBOARD_URL = "https://insight.reidin.com/home/dashboard/997"
 
+def cleanup_old_files():
+    print("[CLEANUP] Удаление старых файлов перед запуском...")
+    patterns = ['*_yields_data_*.xlsx', '*_yields_data_*.json']
+    exclude = ['yields_data.json']
+    removed_count = 0
+    for pattern in patterns:
+        import glob
+        for file in glob.glob(pattern):
+            if os.path.basename(file) not in exclude:
+                try:
+                    os.remove(file)
+                    removed_count += 1
+                    print(f"[OK] Удален: {os.path.basename(file)}")
+                except Exception as e:
+                    print(f"[WARNING] Не удалось удалить {file}: {e}")
+    print(f"[OK] Удалено старых файлов: {removed_count}\n")
+
 def main():
+    cleanup_old_files()
     print(f"[START] Запуск парсера Yields Data")
     print(f"[INFO] Dashboard: {DASHBOARD_URL}")
 
