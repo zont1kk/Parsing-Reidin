@@ -409,9 +409,25 @@ Parsing Reidin/
 - **`convert_price_trends.py`** - конвертирует XLSX в JSON с автоопределением типа данных
 - **`merge_price_trends.py`** - объединяет все JSON в два итоговых файла
 - **Dashboard**: https://insight.reidin.com/home/dashboard/1117
-- **Логика**: Property (все) → Date (01.01.2003) → City loop (5 городов) → Property Type loop (Apartment, Villa) → Скачивание Sales + Rent Price Trend
+- **Логика парсера**: Property (все) → Date (01.01.2003) → City loop (все города) → Property Type loop (Apartment, Villa) → Скачивание Sales + Rent Price Trend
 - **Выходные файлы**: `sales_price_trend.json`, `rent_price_trend.json`
-- **Структура данных**: {city → property_type → date → location → {price, mom/qoq/yoy_change_percent}}
+- **Структура данных**:
+  ```
+  {
+    city: {
+      type: {
+        date: {
+          location: {
+            average_sales_price (или average_rent_price): number,
+            mom_change_percent: number | null,
+            qoq_change_percent: number | null,
+            yoy_change_percent: number | null
+          }
+        }
+      }
+    }
+  }
+  ```
 
 ### Парсер 2: Property Data (Dashboard 996)
 
@@ -419,9 +435,22 @@ Parsing Reidin/
 - **`convert_property_data.py`** - конвертирует XLSX в JSON
 - **`merge_property_data.py`** - объединяет все JSON в два итоговых файла
 - **Dashboard**: https://insight.reidin.com/home/dashboard/996
-- **Логика**: Property (все) → Date (01.01.2003) → City loop (города парсятся сами) → Динамическое определение типов для каждого города → Скачивание Sales + Rent Property Data
+- **Логика парсера**: Property (все) → Date (01.01.2003) → City loop (все города) → Property Type loop (динамическое определение типов для каждого города) → Скачивание Sales + Rent Property Data
 - **Выходные файлы**: `sales_property_data.json`, `rent_property_data.json`
-- **Структура данных**: {city → property_type → date → property → {average_sales/rent_price}}
+- **Структура данных**:
+  ```
+  {
+    city: {
+      type: {
+        date: {
+          property_name: {
+            average_sales_price (или average_rent_price): number
+          }
+        }
+      }
+    }
+  }
+  ```
 
 ### Парсер 3: Yields (Dashboard 997)
 
@@ -429,9 +458,22 @@ Parsing Reidin/
 - **`convert_yields.py`** - конвертирует XLSX в JSON
 - **`merge_yields.py`** - объединяет все JSON в один итоговый файл
 - **Dashboard**: https://insight.reidin.com/home/dashboard/997
-- **Логика**: Property (все) → Date (01.01.2003) → City loop (города парсятся сами) → Динамическое определение типов → Скачивание Yields
+- **Логика парсера**: Property (все) → Date (01.01.2003) → City loop (все города) → Property Type loop (динамическое определение типов) → Скачивание Yields
 - **Выходной файл**: `yields_data.json`
-- **Структура данных**: {city → property_type → date → property → {gross_yield_percent}}
+- **Структура данных**:
+  ```
+  {
+    city: {
+      type: {
+        date: {
+          location: {
+            gross_yield_percent: number
+          }
+        }
+      }
+    }
+  }
+  ```
 
 ### Парсер 4: Rental Yields (Dashboard 1118)
 
@@ -439,9 +481,28 @@ Parsing Reidin/
 - **`convert_rental_yields.py`** - конвертирует XLSX в JSON
 - **`merge_rental_yields.py`** - объединяет все JSON в один итоговый файл с хронологической сортировкой дат
 - **Dashboard**: https://insight.reidin.com/home/dashboard/1118
-- **Логика**: Property (все) → Date (01.01.2003) → Location (все) → City loop (города парсятся сами) → Property Type loop (Apartment, Villa) → Bedrooms loop (All, 0/Studio, 1-6 Bedrooms) → Скачивание Rental Yields
+- **Логика парсера**: Property (все) → Date (01.01.2003) → Location (все) → City loop (все города) → Property Type loop (Apartment, Villa) → Bedrooms loop (All, 0/Studio, 1-6 Bedrooms) → Скачивание Rental Yields
 - **Выходной файл**: `rental_yields_data.json`
-- **Структура данных**: {city → property_type → date → location → {bedroom_key: rental_yields_percent}}
+- **Структура данных**:
+  ```
+  {
+    city: {
+      type: {
+        date: {
+          location: {
+            bedroom_key: rental_yields_percent (number)
+          }
+        }
+      }
+    }
+  }
+  ```
+
+  где `bedroom_key` = "all" | "0" | "1" | "2" | "3" | "4" | "5" | "6"
+- **Особенности**:
+  - Данные до 2017 года содержат только "all" (без разбивки по спальням)
+  - С 2017 года доступны детальные данные по каждому типу спален (0, 1, 2, 3, 4, 5, 6, all)
+  - Даты автоматически сортируются хронологически при объединении (от самой ранней к самой поздней)
 
 ### Использование
 
