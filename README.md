@@ -433,13 +433,25 @@ Parsing Reidin/
 - **Выходной файл**: `yields_data.json`
 - **Структура данных**: {city → property_type → date → property → {gross_yield_percent}}
 
+### Парсер 4: Rental Yields (Dashboard 1118)
+
+- **`parser_rental_yields.py`** - скачивает данные по доходности аренды (Rental Yields) с детализацией по количеству спален
+- **`convert_rental_yields.py`** - конвертирует XLSX в JSON
+- **`merge_rental_yields.py`** - объединяет все JSON в один итоговый файл с хронологической сортировкой дат
+- **Dashboard**: https://insight.reidin.com/home/dashboard/1118
+- **Логика**: Property (все) → Date (01.01.2003) → Location (все) → City loop (города парсятся сами) → Property Type loop (Apartment, Villa) → Bedrooms loop (All, 0/Studio, 1-6 Bedrooms) → Скачивание Rental Yields
+- **Выходной файл**: `rental_yields_data.json`
+- **Структура данных**: {city → property_type → date → location → {bedroom_key: rental_yields_percent}}
+
 ### Использование
 
 Каждый парсер запускается отдельно и работает полностью автономно:
 
 ```bash
+python parser_price_trends.py
 python parser_property_data.py
 python parser_yields.py
+python parser_rental_yields.py
 ```
 
 **Рекомендуемый режим**: Настройте cron/Task Scheduler для автоматического запуска каждого парсера раз в месяц.
@@ -457,6 +469,7 @@ python parser_yields.py
 0 3 1 * * cd /path/to/Parsing-Reidin && .venv/bin/python parser_price_trends.py
 0 4 1 * * cd /path/to/Parsing-Reidin && .venv/bin/python parser_property_data.py
 0 5 1 * * cd /path/to/Parsing-Reidin && .venv/bin/python parser_yields.py
+0 6 1 * * cd /path/to/Parsing-Reidin && .venv/bin/python parser_rental_yields.py
 ```
 
 ## Лицензия
