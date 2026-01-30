@@ -104,8 +104,8 @@ def main() -> None:
 
         page.remove_listener("response", default_handler)
         
-        print("[INFO] Ожидание полной загрузки страницы (5 сек)...")
-        page.wait_for_timeout(5000)
+        print("[INFO] Ожидание полной загрузки страницы (10 сек)...")
+        page.wait_for_timeout(10000)
 
         start_date_str = os.environ.get("PARSER_START_DATE")
         end_date_str = os.environ.get("PARSER_END_DATE")
@@ -418,11 +418,38 @@ def main() -> None:
                     if first_elem.count() > 0:
                         target_element = first_elem
                 if target_element:
+                    # Шаг 1: Найти и нажать на expandButton для раскрытия подрайонов
+                    expand_button = target_element.locator('div.expandButton')
+                    if expand_button.count() > 0:
+                        print(f"  [INFO] Раскрываю подрайоны...")
+                        expand_button.first.click()
+                        page.wait_for_timeout(3000)
+                    
+                    # Шаг 2: Собрать все подрайоны (aria-level="2")
+                    all_rows = scroll_region.locator('div.row')
+                    subareas = []
+                    for i in range(all_rows.count()):
+                        row = all_rows.nth(i)
+                        try:
+                            # Ищем slicerItemContainer внутри row
+                            slicer_item = row.locator('div.slicerItemContainer').first
+                            if slicer_item.count() > 0:
+                                aria_level = slicer_item.get_attribute('aria-level')
+                                if aria_level == '2':
+                                    subarea_title = slicer_item.get_attribute('title')
+                                    if subarea_title:
+                                        subareas.append(subarea_title)
+                        except:
+                            pass
+                    
+                    print(f"  [INFO] Найдено подрайонов: {len(subareas)} ({', '.join(subareas[:5])}{'...' if len(subareas) > 5 else ''})")
+                    
+                    # Шаг 3: Собрать данные главного района
                     base_captured_requests = []
                     base_handler = create_handle_response(area, base_captured_requests, page)
                     page.on("response", base_handler)
                     
-                    print(f"  [INFO] Подключен обработчик для перехвата базовых метрик...")
+                    print(f"  [INFO] Подключен обработчик для перехвата базовых метрик главного района...")
                     target_element.click()
                     page.wait_for_timeout(3000)
                     
@@ -432,8 +459,9 @@ def main() -> None:
                         pass
                     
                     page.remove_listener("response", base_handler)
-                    print(f"  [OK] Базовые метрики перехвачены: {len(base_captured_requests)} запросов")
+                    print(f"  [OK] Базовые метрики главного района перехвачены: {len(base_captured_requests)} запросов")
                     
+                    # Сохранение базовых данных главного района
                     if dates_to_process:
                         first_date = dates_to_process[0]
                         if isinstance(first_date, tuple):
@@ -445,6 +473,7 @@ def main() -> None:
                             all_dates_result[date_key] = {}
                         all_dates_result[date_key][area] = base_captured_requests.copy()
                     
+                    # Обработка дат для главного района
                     for day_index, date_str in enumerate(dates_to_process):
                         is_first_day = (day_index == 0)
                         process_area_day(area, date_str, is_first_day, base_captured_requests)
@@ -452,6 +481,103 @@ def main() -> None:
                             json.dump(all_dates_result, f, ensure_ascii=False, indent=2)
 
                     set_date_to_today()
+                    
+                    # Шаг 4: Обработка каждого подрайона
+                    for subarea in subareas:
+                        print(f"\n  {'='*50}")
+                        print(f"  [SUBAREA] {area} -> {subarea}")
+                        print(f"  {'='*50}")
+                        
+                        # Открыть dropdown снова
+                        dropdown_menu.first.click()
+                        page.wait_for_timeout(2000)
+                        
+                        # Поиск подрайона
+                        search_header = page.locator('div.searchHeader.show')
+                        if search_header.count() == 0:
+                            for frame in page.frames:
+                                search_header = frame.locator('div.searchHeader.show')
+                                if search_header.count() > 0:
+                                    break
+                        
+                        search_input = search_header.locator('input.searchInput')
+                        if search_input.count() > 0:
+                            search_input.first.clear()
+                            page.wait_for_timeout(300)
+                            for char in subarea:
+                                search_input.first.type(char)
+                                page.wait_for_timeout(80)
+                            page.wait_for_timeout(2000)
+                        
+                        # Найти элемент подрайона
+                        scroll_region_sub = page.locator('div.scrollRegion')
+                        if scroll_region_sub.count() == 0:
+                            for frame in page.frames:
+                                scroll_region_sub = frame.locator('div.scrollRegion')
+                                if scroll_region_sub.count() > 0:
+                                    break
+                        
+                        all_rows_sub = scroll_region_sub.locator('div.row')
+                        subarea_element = None
+                        
+                        for i in range(all_rows_sub.count()):
+                            row = all_rows_sub.nth(i)
+                            # Ищем slicerItemContainer с aria-level="2" и нужным title
+                            slicer_items = row.locator('div.slicerItemContainer')
+                            for j in range(slicer_items.count()):
+                                slicer_item = slicer_items.nth(j)
+                                try:
+                                    aria_level = slicer_item.get_attribute('aria-level')
+                                    item_title = slicer_item.get_attribute('title')
+                                    if aria_level == '2' and item_title == subarea:
+                                        subarea_element = slicer_item
+                                        break
+                                except:
+                                    pass
+                            if subarea_element:
+                                break
+                        
+                        if subarea_element:
+                            # Перехват данных подрайона
+                            subarea_captured_requests = []
+                            subarea_handler = create_handle_response(f"{area} - {subarea}", subarea_captured_requests, page)
+                            page.on("response", subarea_handler)
+                            
+                            print(f"    [INFO] Подключен обработчик для подрайона...")
+                            subarea_element.click()
+                            page.wait_for_timeout(3000)
+                            
+                            try:
+                                page.wait_for_load_state("networkidle", timeout=5000)
+                            except:
+                                pass
+                            
+                            page.remove_listener("response", subarea_handler)
+                            print(f"    [OK] Данные подрайона перехвачены: {len(subarea_captured_requests)} запросов")
+                            
+                            # Сохранение базовых данных подрайона
+                            subarea_key = f"{area} - {subarea}"
+                            if dates_to_process:
+                                first_date = dates_to_process[0]
+                                if isinstance(first_date, tuple):
+                                    date_key = f"{first_date[0]}-{first_date[1]}"
+                                else:
+                                    date_key = first_date
+                                
+                                if date_key not in all_dates_result:
+                                    all_dates_result[date_key] = {}
+                                all_dates_result[date_key][subarea_key] = subarea_captured_requests.copy()
+                            
+                            # Обработка дат для подрайона
+                            for day_index, date_str in enumerate(dates_to_process):
+                                is_first_day = (day_index == 0)
+                                process_area_day(subarea_key, date_str, is_first_day, subarea_captured_requests)
+                                with open(output_file, "w", encoding="utf-8") as f:
+                                    json.dump(all_dates_result, f, ensure_ascii=False, indent=2)
+                            
+                            set_date_to_today()
+                        else:
+                            print(f"    [WARNING] Не найден элемент для подрайона: {subarea}")
                 else:
                     print(f"[WARNING] Не найден элемент для района: {area}")
             else:
